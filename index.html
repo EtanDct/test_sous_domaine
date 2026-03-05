@@ -93,6 +93,29 @@
             color: white;
         }
 
+        .option.correct {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+
+        .option.incorrect {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+
+        .option.answered {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .option.answered:hover {
+            transform: none;
+            background: inherit;
+            border-color: inherit;
+        }
+
         .option input[type="radio"] {
             width: 20px;
             height: 20px;
@@ -833,12 +856,12 @@
             const optionsContainer = document.getElementById('options-container');
             optionsContainer.innerHTML = '';
 
+            const alreadyAnswered = userAnswers[currentQuestion] !== null;
+            const correctIndex = question.correct;
+
             question.options.forEach((option, index) => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'option';
-                if (userAnswers[currentQuestion] === index) {
-                    optionDiv.classList.add('selected');
-                }
 
                 const radio = document.createElement('input');
                 radio.type = 'radio';
@@ -846,7 +869,24 @@
                 radio.value = index;
                 radio.id = `option-${index}`;
                 radio.checked = userAnswers[currentQuestion] === index;
-                radio.onchange = () => selectAnswer(index);
+
+                if (alreadyAnswered) {
+                    // Restaurer le feedback correct/incorrect
+                    optionDiv.classList.add('answered');
+                    radio.disabled = true;
+                    if (index === correctIndex) {
+                        optionDiv.classList.add('correct');
+                    }
+                    if (index === userAnswers[currentQuestion] && index !== correctIndex) {
+                        optionDiv.classList.add('incorrect');
+                    }
+                } else {
+                    radio.onchange = () => selectAnswer(index);
+                    optionDiv.onclick = () => {
+                        radio.checked = true;
+                        selectAnswer(index);
+                    };
+                }
 
                 const label = document.createElement('label');
                 label.htmlFor = `option-${index}`;
@@ -855,11 +895,6 @@
 
                 optionDiv.appendChild(radio);
                 optionDiv.appendChild(label);
-                optionDiv.onclick = () => {
-                    radio.checked = true;
-                    selectAnswer(index);
-                };
-
                 optionsContainer.appendChild(optionDiv);
             });
 
@@ -880,15 +915,22 @@
         }
 
         function selectAnswer(index) {
+            // Ne permet pas de changer une réponse déjà donnée
+            if (userAnswers[currentQuestion] !== null) return;
+
             userAnswers[currentQuestion] = index;
-            
-            // Update UI
+
+            const correctIndex = questions[currentQuestion].correct;
             const options = document.querySelectorAll('.option');
             options.forEach((opt, i) => {
-                if (i === index) {
-                    opt.classList.add('selected');
-                } else {
-                    opt.classList.remove('selected');
+                // Désactiver toutes les options après réponse
+                opt.classList.add('answered');
+
+                if (i === correctIndex) {
+                    opt.classList.add('correct');
+                }
+                if (i === index && index !== correctIndex) {
+                    opt.classList.add('incorrect');
                 }
             });
         }
